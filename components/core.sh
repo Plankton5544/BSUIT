@@ -72,7 +72,7 @@ ui_cursor() {
 			;;
 
 		"move")
-			echo -ne "\e[$cols;${lines}H" #<--CURSOR MOVE TO ROW $2 COLUMN $3
+			echo -ne "\e[$lines;${cols}H" #<--CURSOR MOVE TO ROW $2 COLUMN $3
 			;;
 
 		"home")
@@ -116,7 +116,7 @@ ui_wait() {
 
 	ui_cursor $ui_rows $ui_cols
 	if read -t $timeout -n $key_num key; then
-		process_input $key
+		ui_input $key
 	fi
 }
 

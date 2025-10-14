@@ -18,7 +18,7 @@ draw_box() {
 	done
 
 	#BOTTOM LINE
-	ui_cursor move "$(($fx))" "$sy"
+	ui_cursor move "$(($fy))" "$sx"
 	for ((i=$fx; i<$sx; i++)); do
 		if [[ $i == $fx || $i == $(($sx-1)) ]]; then
 			echo -n "|"
@@ -28,7 +28,7 @@ draw_box() {
 	done
 
 	#LEFT SIDE
-	ui_cursor move "$fx" "$(($fy+1))"
+	ui_cursor move "$(($fy+1))" "$fx"
 	for ((i=$fy; i<$(($sy-1)); i++)); do
 		echo -n "|"
 		ui_cursor down 1
@@ -36,7 +36,7 @@ draw_box() {
 	done
 
 	#RIGHT SIDE
-	ui_cursor move "$(($sx-1))" "$(($fy+1))"
+	ui_cursor move "$(($fy+1))" "$(($sx-1))"
 	for ((i=$fy; i<$(($sy-1)); i++)); do
 		echo -n "|"
 		ui_cursor down 1
@@ -46,7 +46,7 @@ draw_box() {
 	if [[ -n $text ]]; then
 		local	center_x=$((((sx-fx)/2)+fx))
 		local	center_y=$((((sy-fy)/2)+fy))
-		ui_cursor move $center_x $center_y
+		ui_cursor move $center_y $center_x
 		local text_len=${#text}
 		ui_cursor backward $(($text_len/2))
 			echo -n $text
@@ -57,6 +57,6 @@ draw_text() {
 	# Used To Print Text To The Screen 
 	local fx=$1 fy=$2 text=$3 wrap=$4 
 
-	ui_cursor move "$fx" "$fy"
+	ui_cursor move "$fy" "$fx"
 	echo -n $text
 }
