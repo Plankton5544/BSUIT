@@ -11,9 +11,7 @@ ui_init() {
 
 	ui_clear entire
 	ui_cursor home
-	ui_running=0	
-	ui_cols=$COLUMNS
-	ui_rows=$LINES
+	ui_cursor_cont hide
 }
 
 ui_clear() {

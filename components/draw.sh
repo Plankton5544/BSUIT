@@ -55,7 +55,7 @@ draw_box() {
 
 draw_text() {
 	# Used To Print Text To The Screen 
-	local fx=$1 fy=$2 text=$3 wrap=$4 
+	local fx=$1 fy=$2 text=$3 
 
 	ui_cursor move "$fy" "$fx"
 	echo -n $text
