@@ -50,7 +50,7 @@ ui_clear() {
 
 ui_cursor() {
 	# Used For Controlling The Cursor Position Etc.
-	local command=$1 cols=$2 lines=$3 
+	local command=$1 col=$2 lines=$3
 
 	case $command in 
 		"up") 
@@ -70,7 +70,7 @@ ui_cursor() {
 			;;
 
 		"move")
-			echo -ne "\e[$lines;${cols}H" #<--CURSOR MOVE TO ROW $3 COLUMN $2
+			echo -ne "\e[$lines;${col}H" #<--IDK?
 			;;
 
 		"home")
