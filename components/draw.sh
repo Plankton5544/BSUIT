@@ -13,12 +13,12 @@ draw_box() {
 
 	#TOP Line
 	ui_cursor move "$fx" "$fy"
-	for ((i=$fx; i=<$sx; i++)); do
+	for ((i=$fx; i<=$sx; i++)); do
 		echo -n "_"
 	done
 
 	#BOTTOM LINE
-	ui_cursor move "$sx" "$(($fy))"
+	ui_cursor move "$fx" "$sy"  
 	for ((i=$fx; i<=$sx; i++)); do
 		if [[ $i == $fx || $i == $(($sx-1)) ]]; then
 			echo -n "|"
@@ -57,6 +57,6 @@ draw_text() {
 	# Used To Print Text To The Screen 
 	local fx=$1 fy=$2 text=$3 
 
-	ui_cursor move "$fy" "$fx"
+	ui_cursor move "$fx" "$fy"
 	echo -n $text
 }
