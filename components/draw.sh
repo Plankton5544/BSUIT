@@ -19,7 +19,7 @@ draw_box() {
 
 	#BOTTOM LINE
 	ui_cursor move "$sx" "$(($fy))"
-	for ((i=$fx; i=<$sx; i++)); do
+	for ((i=$fx; i<=$sx; i++)); do
 		if [[ $i == $fx || $i == $(($sx-1)) ]]; then
 			echo -n "|"
 		else
@@ -29,7 +29,7 @@ draw_box() {
 
 	#LEFT SIDE
 	ui_cursor move "$fx" "$(($fy+1))"
-	for ((i=$fy; i=<$(($sy-1)); i++)); do
+	for ((i=$fy; i<=$(($sy-1)); i++)); do
 		echo -n "|"
 		ui_cursor down 1
 		ui_cursor backward 1
@@ -37,7 +37,7 @@ draw_box() {
 
 	#RIGHT SIDE
 	ui_cursor move "$(($sx-1))" "$(($fy+1))"
-	for ((i=$fy; i=<$(($sy-1)); i++)); do
+	for ((i=$fy; i<=$(($sy-1)); i++)); do
 		echo -n "|"
 		ui_cursor down 1
 		ui_cursor backward 1
