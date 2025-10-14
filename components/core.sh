@@ -50,7 +50,7 @@ ui_clear() {
 
 ui_cursor() {
 	# Used For Controlling The Cursor Position Etc.
-	local command=$1 lines=$2 cols=$3
+	local command=$1 cols=$2 lines=$3 
 
 	case $command in 
 		"up") 
@@ -70,7 +70,7 @@ ui_cursor() {
 			;;
 
 		"move")
-			echo -ne "\e[$lines;${cols}H" #<--CURSOR MOVE TO ROW $2 COLUMN $3
+			echo -ne "\e[$lines;${cols}H" #<--CURSOR MOVE TO ROW $3 COLUMN $2
 			;;
 
 		"home")
@@ -112,7 +112,7 @@ ui_wait() {
 	# Used For Pre-Input & Potential As Sleep
 	local timeout=$1 key_num=$2
 
-	ui_cursor $ui_rows $ui_cols
+	ui_cursor $LINES $COLUMNS
 	if read -t $timeout -n $key_num key; then
 		ui_input $key
 	fi
