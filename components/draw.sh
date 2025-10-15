@@ -76,22 +76,27 @@ draw_text() {
 
 draw_menu() {
 	# Used To Print An Interactable Menu To The Screen 
+	#-NOTE- 
+	# After Arg 3 Passed Info Will Be In Menu!
 	local fx=$1 fy=$2 title=$3 
-	local items=($4)
+	shift 3
+	local items=("$@")
 	local selected=0
 	local text_len
 	
 	# Use read -rsn1 for key capture (up/down arrows)
 	ui_cursor move "$fx" "$fy"
 	echo -n "X"
+
 	ui_cursor up 1
-	echo -n "$title"
-	ui_cursor down 2 
-	for item in ${items[@]}; do
-		echo -n "$item"
-		text_len=${#item}
-		ui_cursor backward $text_len
-		ui_cursor down 1
+	draw_text "$fx" "$fy" "$title"
+
+
+	local current_row=$((fy + 1))
+	for item in "${items[@]}"; do
+		ui_cursor move "$fx" "$current_row"
+		echo -n " $BX_VR$item"  # Indent items slightly
+		current_row=$((current_row + 1))
 	done
 }
 
