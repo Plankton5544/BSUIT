@@ -26,7 +26,7 @@ draw_box() {
 		fi
 	done
 	#BOTTOM LINE
-	ui_cursor move "$fx" "$sy"  
+	ui_cursor move "$fx" "$sy"
 	for ((i=$fx; i<=$sx; i++)); do
 		if [[ $i == $fx ]]; then
 			echo -n $BX_BL
@@ -67,40 +67,47 @@ draw_box() {
 }
 
 draw_text() {
-	# Used To Print Text To The Screen 
-	local fx=$1 fy=$2 text=$3 
+	# Used To Print Text To The Screen
+	local fx=$1 fy=$2 text=$3
 
 	ui_cursor move "$fx" "$fy"
 	echo -n $text
 }
 
 draw_menu() {
-	# Used To Print An Interactable Menu To The Screen 
-	#-NOTE- 
+	# Used To Print An Interactable Menu To The Screen
+	#-NOTE-
 	# Title Determines Length Of Menu!
 	# After Arg 3 Passed Info Will Be In Menu!
-	local fx=$1 fy=$2 title=$3 
+	local x=$1 y=$2 title=$3
 	local temp
 	shift 3
 	local items=("$@")
 	local selected=0
 	local text_len=${#title}
-	
+
 	# Use read -rsn1 for key capture (up/down arrows)
-	ui_cursor move "$fx" "$fy"
-	echo -n "X"
+	ui_cursor move "$x" "$y"
+	echo -n "X" #<-- DEBUG FOR INFO
 	ui_cursor up 1
-	draw_text "$fx" "$fy" "$title"
+	draw_text "$x" "$y" "$title"
 
 
-	local current_row=$((fy + 1))
+	local current_row=$((y + 1))
 	for item in "${items[@]}"; do
-		ui_cursor move "$fx" "$current_row"
+		if [[ ${#title} -lt ${#item} && ${#item} -gt $temp ]]; then
+			temp=${#item}
+    elif [[ ${#title} -gt ${#item} && ${#title} -gt $temp ]]; then
+      temp=${#title}
+      ((temp--))
+		fi
+
+		ui_cursor move "$x" "$current_row"
 		echo -n " $BX_VR$item"  # Indent items slightly
 		current_row=$((current_row + 1))
 	done
-	temp=$((fx+text_len))
-	draw_box $((fx-1)) $((fy-1)) $temp $current_row 
+	temp=$((temp+x+1))
+	draw_box $((x-1)) $((y-1)) $temp $current_row
 }
 
 draw_progress() {

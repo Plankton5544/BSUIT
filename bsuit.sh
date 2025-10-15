@@ -9,10 +9,12 @@ source components/style.sh
 # Last Edit: 7:55 PM
 #
 # 
+temp=0
 
 ui_init
 trap 'ui_exit' EXIT #Ensures Proper exiting even if killed early
 draw_menu 20 10 "#==TITLE==#" "Banana" "Apple" "Orange"
+ui_wait 1 1
+ 
 
-sleep 5
 ui_exit
