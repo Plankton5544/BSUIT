@@ -12,9 +12,7 @@ source components/style.sh
 
 ui_init
 trap 'ui_exit' EXIT #Ensures Proper exiting even if killed early
-draw_box 4 4 10 50 
-ui_cursor move 
-draw_menu 25 7 "TITLE" "Banana" "Apple" "Orange"
+draw_menu 20 10 "#==TITLE==#" "Banana" "Apple" "Orange"
 
 sleep 5
 ui_exit

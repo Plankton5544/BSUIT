@@ -12,7 +12,7 @@ source style.sh
 draw_box() {
 	# Used To Control Where To Draw Boxes
 	#local fx=$1 fy=$2 sx=$3 sy=$4 text=$5
-	local fy=$1 fx=$2 sy=$3 sx=$4 text=$5  # row,col,row,col
+	local fx=$1 fy=$2 sx=$3 sy=$4 text=$5  # row,col,row,col
 
 	#TOP Line
 	ui_cursor move "$fx" "$fy"
@@ -77,17 +77,18 @@ draw_text() {
 draw_menu() {
 	# Used To Print An Interactable Menu To The Screen 
 	#-NOTE- 
+	# Title Determines Length Of Menu!
 	# After Arg 3 Passed Info Will Be In Menu!
 	local fx=$1 fy=$2 title=$3 
+	local temp
 	shift 3
 	local items=("$@")
 	local selected=0
-	local text_len
+	local text_len=${#title}
 	
 	# Use read -rsn1 for key capture (up/down arrows)
 	ui_cursor move "$fx" "$fy"
 	echo -n "X"
-
 	ui_cursor up 1
 	draw_text "$fx" "$fy" "$title"
 
@@ -98,6 +99,8 @@ draw_menu() {
 		echo -n " $BX_VR$item"  # Indent items slightly
 		current_row=$((current_row + 1))
 	done
+	temp=$((fx+text_len))
+	draw_box $((fx-1)) $((fy-1)) $temp $current_row 
 }
 
 draw_progress() {
