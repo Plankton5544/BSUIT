@@ -80,7 +80,6 @@ draw_menu() {
 	# Title Determines Length Of Menu!
 	# After Arg 3 Passed Info Will Be In Menu!
 	local x=$1 y=$2 title=$3
-	local temp
 	shift 3
 	local items=("$@")
 	local selected=0
@@ -95,20 +94,25 @@ draw_menu() {
 
 	local current_row=$((y + 1))
 	for item in "${items[@]}"; do
-		if [[ ${#title} -lt ${#item} && ${#item} -gt $temp ]]; then
-			temp=${#item}
-    elif [[ ${#title} -gt ${#item} && ${#title} -gt $temp ]]; then
-      temp=${#title}
-      ((temp--))
-		fi
-
 		ui_cursor move "$x" "$current_row"
 		echo -n " $BX_VR$item"  # Indent items slightly
 		current_row=$((current_row + 1))
 	done
-	temp=$((temp+x+1))
-	draw_box $((x-1)) $((y-1)) $temp $current_row
-}
+
+	#Length Checks
+	temp=${#title}
+		for item in "${items[@]}"; do
+			if [[ ${#item} -gt $temp ]]; then
+				local temp=${#item}
+			fi
+		done
+		if [[ $temp -eq ${#title} ]]; then
+			temp=$((temp+x)) # Major Titles Look Cleaner Than With Larger Menu
+		else
+			temp=$((temp+x+1))
+		fi
+		draw_box $((x-1)) $((y-1)) $temp $current_row
+	}
 
 draw_progress() {
 }
