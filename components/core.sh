@@ -84,6 +84,11 @@ ui_cursor() {
 		"rest_pos")
 			echo -ne "\e[u" #<--RESTORE CURSOR POS
 			;;
+		"center")
+			#TODO TAKE IN xy calculate middle and move there with escape code
+
+
+			;;
 		*)
 			echo -n ""
 			;;
@@ -112,7 +117,7 @@ ui_wait() {
 	# Used For Pre-Input & Potential As Sleep
 	local timeout=$1 key_num=$2
 
-	ui_cursor $LINES $COLUMNS
+	ui_cursor "$LINES" "$COLUMNS"
 	if read -t $timeout -n $key_num key; then
 		ui_input $key
 	fi
@@ -131,6 +136,5 @@ ui_exit() {
 	# Cleanup Process Etc.
 	ui_clear entire
 	ui_cursor home
-	ui_running=1
 	ui_cursor_cont show
 }
