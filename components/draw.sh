@@ -81,8 +81,8 @@ draw_menu() {
 	local x=$1 y=$2 title=$3
 	shift 3
 	local items=("$@")
-	local selected=0
 	local text_len=${#title}
+  local index=0
 
 	# Use read -rsn1 for key capture (up/down arrows)
 	ui_cursor move "$x" "$y"
@@ -93,13 +93,19 @@ draw_menu() {
 
 	local current_row=$((y + 1))
 	for item in "${items[@]}"; do
+    if [[ $index -eq $selected ]]; then
+      item="$CIR_FULL $item"
+    else
+      item="$CIR_EMPTY $item"
+    fi
 		ui_cursor move "$x" "$current_row"
 		echo -n " $BX_VR$item"  # Indent items slightly
 		current_row=$((current_row + 1))
+    ((index++))
 	done
 
 	#Length Checks
-	temp=${#title}
+	local temp=${#title}
 		for item in "${items[@]}"; do
 			if [[ ${#item} -gt $temp ]]; then
 				local temp=${#item}

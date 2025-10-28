@@ -1,18 +1,7 @@
 #!/bin/bash
+declare selection
 
-ui_init() {
-	# Used For Initialization Of The Bash Script User Interface Translator (BSUIT)
 
-	# Enable automatic updating of LINES and COLUMNS
-	shopt -s checkwinsize
-
-	# Force an update by running a command (needed initially)
-	(:)  # Empty subshell - triggers window size check
-
-	ui_clear entire
-	ui_cursor home
-	ui_cursor_cont hide
-}
 
 ui_clear() {
 	# Used To Clear Screen Position Based On Command
@@ -48,29 +37,45 @@ ui_clear() {
 	esac
 }
 
+ui_init() {
+	# Used For Initialization Of The Bash Script User Interface Translator (BSUIT)
+
+	# Enable automatic updating of LINES and COLUMNS
+	shopt -s checkwinsize
+
+	# Force an update by running a command (needed initially)
+	(:)  # Empty subshell - triggers window size check
+
+	ui_clear entire
+	ui_cursor home
+	ui_cursor_cont hide
+}
+
 ui_cursor() {
 	# Used For Controlling The Cursor Position Etc.
-	local command=$1 col=$2 lines=$3
+  #	x=horizontal(col) y=vertical(row)
+  local command=$1 x=$2 y=$3
 
 	case $command in
 		"up")
-			echo -ne "\e[${lines}A" #<--CURSOR UP $2 LINES
+			echo -ne "\e[${x}A"
 			;;
 
 		"down")
-			echo -ne "\e[${lines}B" #<--CURSOR DOWN $2 LINES
+			echo -ne "\e[${x}B"
 			;;
 
 		"forward")
-			echo -ne "\e[${lines}C" #<--CURSOR FORWARD $2 COLUMNS
+			echo -ne "\e[${x}C"
 			;;
 
 		"backward")
-			echo -ne "\e[${lines}D" #<--CURSOR BACKWARD $2 COLUMNS
+			echo -ne "\e[${x}D"
 			;;
 
 		"move")
-      echo -ne "\e[$col;${line}H" #<--CURSOR $2 COLUMNS $3 LINES (X, Y)
+      # ANSI wants (row, col) but we take (x, y) = (col, row)
+      echo -ne "\e[${y};${x}H"
 			;;
 
 		"home")
@@ -85,10 +90,11 @@ ui_cursor() {
 			echo -ne "\e[u" #<--RESTORE CURSOR POS
 			;;
 		"center")
-      mid_x=$((((bot_x-top_x)/2)+bot_x)) #<--Basically finds delta x
-      mid_y=$((((bot_y-top_y)/2)+bot_y)) #<--Basically finds delta y
-
-      echo -ne "\e[$mid_x;${mid_y}H" #<--CURSOR $2 COLUMNS $3 LINES (X, Y)
+      # Note- The row & col are used as bot_x & y
+      local sx=$4 sy=$5
+      mid_x=$(((((x-sx)/2)+$x))) #<--Basically Finds Delta X
+      mid_y=$(((((y-sy)/2)+$y))) #<--Basically Finds Delta Y
+      echo -ne "\e[$mid_x;${mid_y}H"
 			;;
 		*)
 			echo -n ""
@@ -114,6 +120,24 @@ ui_cursor_cont() {
 	esac
 }
 
+ui_input() {
+  # Custom Key Processes
+  local key=$1
+  case in $key
+    "j")
+      if [[ $selection -gt 0 ]]; then
+        ((selection--))
+      fi
+      ;;
+    "k")
+      ((selection++))
+      ;;
+    "\\n")
+      ;;
+  esac
+
+}
+
 ui_wait() {
 	# Used For Pre-Input & Potential As Sleep
 	local timeout=$1 key_num=$2
@@ -122,15 +146,6 @@ ui_wait() {
 	if read -t $timeout -n $key_num key; then
 		ui_input $key
 	fi
-}
-
-ui_input() {
-	# Custom Key Processes
-	local key=$1
-
-	#<--HERE
-
-	echo -n $key
 }
 
 ui_exit() {
