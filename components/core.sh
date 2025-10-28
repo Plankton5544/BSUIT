@@ -18,8 +18,8 @@ ui_clear() {
 	# Used To Clear Screen Position Based On Command
 	local command=$1
 
-	case $command in 
-		"entire") 
+	case $command in
+		"entire")
 			echo -ne "\e[2J" #<--ENTIRE SCREEN CLEAR
 			;;
 
@@ -52,8 +52,8 @@ ui_cursor() {
 	# Used For Controlling The Cursor Position Etc.
 	local command=$1 col=$2 lines=$3
 
-	case $command in 
-		"up") 
+	case $command in
+		"up")
 			echo -ne "\e[${lines}A" #<--CURSOR UP $2 LINES
 			;;
 
@@ -70,7 +70,7 @@ ui_cursor() {
 			;;
 
 		"move")
-			echo -ne "\e[$lines;${col}H" #<--IDK?
+      echo -ne "\e[$col;${line}H" #<--CURSOR $2 COLUMNS $3 LINES (X, Y)
 			;;
 
 		"home")
@@ -85,9 +85,10 @@ ui_cursor() {
 			echo -ne "\e[u" #<--RESTORE CURSOR POS
 			;;
 		"center")
-			#TODO TAKE IN xy calculate middle and move there with escape code
+      mid_x=$((((bot_x-top_x)/2)+bot_x)) #<--Basically finds delta x
+      mid_y=$((((bot_y-top_y)/2)+bot_y)) #<--Basically finds delta y
 
-
+      echo -ne "\e[$mid_x;${mid_y}H" #<--CURSOR $2 COLUMNS $3 LINES (X, Y)
 			;;
 		*)
 			echo -n ""
@@ -99,12 +100,12 @@ ui_cursor_cont() {
 	# Used To Control The Cursor Other Than Position Basis
 	local command=$1
 
-	case $command in 
-		"hide") 
+	case $command in
+		"hide")
 			echo -ne "\e[?25l" #<--HIDES CURSOR
 			;;
 
-		"show") 
+		"show")
 			echo -ne "\e[?25h" #<--SHOW CURSOR
 			;;
 		*)
@@ -124,7 +125,7 @@ ui_wait() {
 }
 
 ui_input() {
-	# Custom Key Processes 
+	# Custom Key Processes
 	local key=$1
 
 	#<--HERE

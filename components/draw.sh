@@ -8,7 +8,6 @@ source style.sh
 # "first" (fx, fy) = top-left
 # "second" (sx, sy) = bottom-right
 
-
 draw_box() {
 	# Used To Control Where To Draw Boxes
 	#local fx=$1 fy=$2 sx=$3 sy=$4 text=$5
