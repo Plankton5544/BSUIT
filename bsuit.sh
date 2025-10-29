@@ -14,6 +14,9 @@ ui_init
 trap 'ui_exit' EXIT #Ensures Proper exiting even if killed early
 draw_menu 20 20 "#==TITLE==#" "Banana" "Apple" "Orange"
 ui_wait 5 1
+sleep 1
+draw_menu 20 20 "#==TITLE==#" "Banana" "Apple" "Orange"
+sleep 1
 
 
 ui_exit

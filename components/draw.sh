@@ -74,53 +74,53 @@ draw_text() {
 }
 
 draw_menu() {
-	# Used To Print An Interactable Menu To The Screen
-	#-NOTE-
-	# Title Determines Length Of Menu!
-	# After Arg 3 Passed Info Will Be In Menu!
-	local x=$1 y=$2 title=$3
-	shift 3
-	local items=("$@")
-	local text_len=${#title}
-  local index=0
+  # Used To Print An Interactable Menu To The Screen
+  #-NOTE-
+  # Title Determines Length Of Menu!
+  # After Arg 3 Passed Info Will Be In Menu!
+  local x=$1 y=$2 title=$3
+  shift 3
+  local items=("$@")
+  local text_len=${#title}
+    local index=0
 
-	# Use read -rsn1 for key capture (up/down arrows)
-	ui_cursor move "$x" "$y"
-	echo -n "X" #<-- DEBUG FOR INFO
-	ui_cursor up 1
-	draw_text "$x" "$y" "$title"
+    # Use read -rsn1 for key capture (up/down arrows)
+    ui_cursor move "$x" "$y"
+    echo -n "X" #<-- DEBUG FOR INFO
+    ui_cursor up 1
+    draw_text "$x" "$y" "$title"
 
 
-	local current_row=$((y + 1))
-	for item in "${items[@]}"; do
-    if [[ $index -eq $selected ]]; then
-      item="$CIR_FULL $item"
-    else
-      item="$CIR_EMPTY $item"
-    fi
-		ui_cursor move "$x" "$current_row"
-		echo -n " $BX_VR$item"  # Indent items slightly
-		current_row=$((current_row + 1))
-    ((index++))
-	done
+    local current_row=$((y + 1))
+    for item in "${items[@]}"; do
+      if [[ $index -eq $selection ]]; then
+        item="$CIR_FULL $item"
+      else
+        item="$CIR_EMPTY $item"
+      fi
+      ui_cursor move "$x" "$current_row"
+      echo -n " $BX_VR$item"  # Indent items slightly
+      current_row=$((current_row + 1))
+      ((index++))
+    done
 
-	#Length Checks
-	local temp=${#title}
-		for item in "${items[@]}"; do
-			if [[ ${#item} -gt $temp ]]; then
-				local temp=${#item}
-			fi
-		done
-		if [[ $temp -eq ${#title} ]]; then
-			temp=$((temp+x)) # Major Titles Look Cleaner Than With Larger Menu
-		else
-			temp=$((temp+x+1))
-		fi
-		draw_box $((x-1)) $((y-1)) $temp $current_row
-	}
+    #Length Checks
+    local temp=${#title}
+      for item in "${items[@]}"; do
+        if [[ ${#item} -gt $temp ]]; then
+          local temp=${#item}
+        fi
+      done
+      if [[ $temp -eq ${#title} ]]; then
+        temp=$((temp+x)) # Major Titles Look Cleaner Than With Larger Menu
+      else
+        temp=$((temp+x+1))
+      fi
+      draw_box $((x-1)) $((y-1)) $temp $current_row
+    }
 
-draw_progress() {
-}
+  draw_progress() {
+  }
 
 draw_spinner() {
 }

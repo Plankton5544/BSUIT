@@ -1,5 +1,5 @@
 #!/bin/bash
-declare selection
+declare selection=0
 
 
 
@@ -123,7 +123,7 @@ ui_cursor_cont() {
 ui_input() {
   # Custom Key Processes
   local key=$1
-  case in $key
+  case $key in
     "j")
       if [[ $selection -gt 0 ]]; then
         ((selection--))
@@ -132,7 +132,7 @@ ui_input() {
     "k")
       ((selection++))
       ;;
-    "\\n")
+    "")
       ;;
   esac
 
