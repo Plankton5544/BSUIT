@@ -105,9 +105,9 @@ draw_menu() {
 
     # Checks For Limits & Exits If Exceeding
     if [[ $selection -gt $((index-1)) ]]; then
-      exit
+      selection=$((index-1))
     elif [[ $selection -lt 0 ]]; then
-      exit
+      selection=0
     fi
 
     #Length Checks

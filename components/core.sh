@@ -1,12 +1,8 @@
 #!/bin/bash
+# GLOBALS
+declare selection=0
 
-ui_error_check() {
-  if [[ -z $1 ]]; then
-    echo "Troubles Finding: $1"
-  elif [[ $1 -lt 0 ]]; then
-    echo "The Variable Falls Under 0!"
-  fi
-}
+
 
 ui_clear() {
 	# Used To Clear Screen Position Based On Command
@@ -143,10 +139,10 @@ ui_input() {
 
 ui_wait() {
 	# Used For Pre-Input & Potential As Sleep
-	local timeout=$1 key_num=$2
-
+	local timeout=$1
+read -rsn3
 	ui_cursor "$LINES" "$COLUMNS"
-	if read -t $timeout -n $key_num key; then
+	if read -rsn3 -t $timeout; then
 		ui_input $key
 	fi
 }
