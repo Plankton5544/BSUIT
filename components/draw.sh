@@ -1,5 +1,5 @@
 #!/bin/bash
-source style.sh
+source components/style.sh
 #!IMPORTANT!
 # Coordinate system note:
 # All functions use (x, y) order for clarity.
@@ -86,7 +86,6 @@ draw_menu() {
 
     # Use read -rsn1 for key capture (up/down arrows)
     ui_cursor move "$x" "$y"
-    echo -n "X" #<-- DEBUG FOR INFO
     ui_cursor up 1
     draw_text "$x" "$y" "$title"
 
@@ -103,6 +102,13 @@ draw_menu() {
       current_row=$((current_row + 1))
       ((index++))
     done
+
+    # Checks For Limits & Exits If Exceeding
+    if [[ $selection -gt $((index-1)) ]]; then
+      exit
+    elif [[ $selection -lt 0 ]]; then
+      exit
+    fi
 
     #Length Checks
     local temp=${#title}

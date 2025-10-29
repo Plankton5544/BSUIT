@@ -1,7 +1,12 @@
 #!/bin/bash
-declare selection=0
 
-
+ui_error_check() {
+  if [[ -z $1 ]]; then
+    echo "Troubles Finding: $1"
+  elif [[ $1 -lt 0 ]]; then
+    echo "The Variable Falls Under 0!"
+  fi
+}
 
 ui_clear() {
 	# Used To Clear Screen Position Based On Command
@@ -90,10 +95,10 @@ ui_cursor() {
 			echo -ne "\e[u" #<--RESTORE CURSOR POS
 			;;
 		"center")
-      # Note- The row & col are used as bot_x & y
+      # Note- just using the x & y defined locally earlier
       local sx=$4 sy=$5
-      mid_x=$(((((x-sx)/2)+$x))) #<--Basically Finds Delta X
-      mid_y=$(((((y-sy)/2)+$y))) #<--Basically Finds Delta Y
+      mid_x=$(((((sx-x)/2)+$x))) #<--Basically Finds Delta X
+      mid_y=$(((((sy-y)/2)+$y))) #<--Basically Finds Delta Y
       echo -ne "\e[$mid_x;${mid_y}H"
 			;;
 		*)
@@ -125,12 +130,10 @@ ui_input() {
   local key=$1
   case $key in
     "j")
-      if [[ $selection -gt 0 ]]; then
-        ((selection--))
-      fi
+        ((selection++))
       ;;
     "k")
-      ((selection++))
+      ((selection--))
       ;;
     "")
       ;;

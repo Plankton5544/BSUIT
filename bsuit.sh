@@ -6,17 +6,26 @@ source components/style.sh
 # 0=TRUE 1+=FALSE
 # AUTHOR: Plankton5544
 # Origin: October Tue 14
-# Last Edit: 8:34 PM Oct 27
+# Last Edit: 7:50 PM Oct 28
 #
 #
 
 ui_init
+ui_error_check $COLUMNS
+ui_error_check $LINES
 trap 'ui_exit' EXIT #Ensures Proper exiting even if killed early
-draw_menu 20 20 "#==TITLE==#" "Banana" "Apple" "Orange"
-ui_wait 5 1
-sleep 1
-draw_menu 20 20 "#==TITLE==#" "Banana" "Apple" "Orange"
-sleep 1
-
+draw_menu 20 20 "#==FRUITS==#" "Banana" "Apple" "Orange"
+ui_wait 2 1
+# Could expand of repeatability?
+draw_menu 20 20 "#==FRUITS==#" "Banana" "Apple" "Orange"
+ui_wait 2 1
+draw_menu 20 20 "#==FRUITS==#" "Banana" "Apple" "Orange"
+ui_wait 2 1
+draw_menu 20 20 "#==FRUITS==#" "Banana" "Apple" "Orange"
+ui_wait 2 1
+draw_menu 20 20 "#==FRUITS==#" "Banana" "Apple" "Orange"
+ui_wait 2 1
+draw_menu 20 20 "#==FRUITS==#" "Banana" "Apple" "Orange"
+ui_wait 2 1
 
 ui_exit
