@@ -142,9 +142,18 @@ ui_wait() {
 	local timeout=$1
 read -rsn3
 	ui_cursor "$LINES" "$COLUMNS"
-	if read -rsn3 -t $timeout; then
-		ui_input $key
-	fi
+ if read -rsn1 -t $timeout key; then
+    # Check if it's an escape sequence
+    if [[ $key == $'\e' ]]; then
+      read -rsn2 -t 0.1 key  # Read the rest of the arrow key sequence
+      case $key in
+        '[A') ui_input 'k' ;;  # Up arrow
+        '[B') ui_input 'j' ;;  # Down arrow
+      esac
+    else
+      ui_input "$key"  # Regular key (j, k, Enter, Etc)
+    fi
+ fi
 }
 
 ui_exit() {

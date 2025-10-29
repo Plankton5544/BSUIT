@@ -2,6 +2,7 @@
 source components/core.sh
 source components/draw.sh
 source components/style.sh
+source components/utilities.sh
 # GLOBAL VARS
 # 0=TRUE 1+=FALSE
 # AUTHOR: Plankton5544
@@ -11,21 +12,6 @@ source components/style.sh
 #
 
 ui_init
-ui_error_check $COLUMNS
-ui_error_check $LINES
 trap 'ui_exit' EXIT #Ensures Proper exiting even if killed early
-draw_menu 20 20 "#==FRUITS==#" "Banana" "Apple" "Orange"
-ui_wait 2
-# Could expand of repeatability?
-draw_menu 20 20 "#==FRUITS==#" "Banana" "Apple" "Orange"
-ui_wait 2
-draw_menu 20 20 "#==FRUITS==#" "Banana" "Apple" "Orange"
-ui_wait 2
-draw_menu 20 20 "#==FRUITS==#" "Banana" "Apple" "Orange"
-ui_wait 2
-draw_menu 20 20 "#==FRUITS==#" "Banana" "Apple" "Orange"
-ui_wait 2
-draw_menu 20 20 "#==FRUITS==#" "Banana" "Apple" "Orange"
-ui_wait 2
-
+sleep 5
 ui_exit
