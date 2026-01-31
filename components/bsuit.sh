@@ -1,11 +1,13 @@
 #!/bin/bash
 source ~/BSUIT/components/style.sh
 
-if [[ -z $1 ]] || [[ -z $2 ]]; then
-  echo "PLEASE USE:"
-  echo "./core.sh [COLUMNS] [LINES]"
-  exit
-fi
+hush() {
+  builtin hash "$1" 2>/dev/null;
+}
+
+nothing() {
+  (:)
+}
 
 curs_goto() {
   local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
@@ -45,40 +47,47 @@ clears() {
   esac
 }
 
-read_key() {
-  local flag="$1"
-  if [[ "$flag" == "timed" ]]; then
-    local time="$2"
-    read -sr -n 1 -t ${time} input
+read_keys(){
+  local time="$1"
+  if [[ -n $time ]]; then
+    read -rsn 1 -t "$time"
   else
-    read -sr -n 1 input
+    read -rsn 1
   fi
-  echo -n $input
+  if [[ $REPLY == $'\e' ]]; then
+    read -rsn 2
+    # Outputs [A, B, C, D as arrow keys
+  fi
 }
 
-update() {
-  local key="$1"
-  case "$MODE" in
-    "TEST")
-      case "$key" in
-        "q") RUNNING="FALSE";;
-      esac ;;
-  esac
+init() {
+  curs_vis hide
+  Mode="base"
+  Selected=0
+  Active=0
+  Items=()
+  buffer alt
 }
 
-render() {
-  local key="$1"
-  clears screen
-  curs_goto 1 1
+cleanup() {
+  curs_vis show
+  Mode=""
+  Selected=
+  Active=
+  Items=()
+  buffer normal
+}
 
-  case "$MODE" in
-    "TEST")
-      draw_box 14 10 12 2 rounded
-      draw_text 0 $LINES "TEST"
-      draw_aligned_text 20 10 "Hello World" center
-      truncate_text 20 25 "Hello World" 5
-      ;;
-  esac
+dispatch() {
+  nothing
+  modes_arr=("$@") # modes_arr is all of the render args
+
+  for mode in "${modes_arr[@]}"; do
+    if [[ "$Mode" == "$mode" ]]; then # Check if Mode matches current mode
+      clears screen
+      "$mode" # Execute function named mode
+    fi
+  done
 }
 
 draw_box() {
@@ -117,29 +126,29 @@ draw_box() {
   # TOP & BOTTOM LINE
   for ((i=1; i<$width; i++)); do
     curs_goto $((x+i)) $y
-    echo -n "$horz"
+    echo -en "$horz"
     curs_goto $((x+i)) $((y+height))
-    echo -n "$horz"
+    echo -en "$horz"
   done
   # LEFT & RIGHT LINE
   for ((i=1; i<$height; i++)); do
     curs_goto $x $((y+i))
-    echo -n "$vert"
+    echo -en "$vert"
     curs_goto $((x+width)) $((y+i))
-    echo -n "$vert"
+    echo -en "$vert"
   done
   # TOP LEFT
   curs_goto $x $y
-  echo -e $tl
+  echo -en $tl
   # TOP RIGHT
   curs_goto $((x+width)) $y
-  echo -e $tr
+  echo -en $tr
   # BOTTOM LEFT
   curs_goto $x $((y+height))
-  echo -e $bl
+  echo -en $bl
   # BOTTOM RIGHT
   curs_goto $((x+width)) $((y+height))
-  echo -e $br
+  echo -en $br
   }
 
 colored_draw_box() {
@@ -177,33 +186,31 @@ colored_draw_box() {
       ;;
   esac
   echo -e $color
-  curs_goto $x $y
-  echo -n "x"
   for ((h=0; h<$((height+1)); h++)); do
     for ((w=0; w<$((width+1)); w++)); do
       curs_goto $((x+w)) $((y+h))
       if [[ $h -eq 0 || $h -eq $height ]]; then
-        echo -e "$horz"
+        echo -en "$horz"
       elif [[ $w -eq 0 || $w -eq $width ]]; then
-        echo -e "$vert"
+        echo -en "$vert"
       else
-        echo -e " "
+        echo -en " "
       fi
     done
   done
   # TOP LEFT
   curs_goto $x $y
-  echo -e $tl
+  echo -en $tl
   # TOP RIGHT
   curs_goto $((x+width)) $y
-  echo -e $tr
+  echo -en $tr
   # BOTTOM LEFT
   curs_goto $x $((y+height))
-  echo -e $bl
+  echo -en $bl
   # BOTTOM RIGHT
   curs_goto $((x+width)) $((y+height))
-  echo -e $br
-  echo -e $RST
+  echo -en $br
+  echo -en $RST
 }
 
 draw_text() {
@@ -211,7 +218,7 @@ draw_text() {
   local y="$2" ## Top left is origin
   local text="$3"
   curs_goto $x $y
-  echo -e $text
+  echo -n $text
 }
 
 draw_aligned_text() {
@@ -236,6 +243,40 @@ draw_aligned_text() {
     esac
 }
 
+display_menu() {
+  local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
+  local y="$2" ## Top left is origin
+  local width="$3"
+  local height="$4"
+  # Engine Vars:
+  # Active Selected Items
+
+  if [[ "$Active" == "1" ]]; then
+    local exec="${Items[Selected]}"
+    "$exec" # Execute function named after the mode
+    Active=0
+    return
+  fi
+
+  draw_box $x $y $width $height single
+  for ((i=0; i<${#Items[@]}; i++)); do
+    curs_goto $((x+1)) $(((y+1)+i))
+  if [[ $Selected -lt 0 ]]; then
+    Selected=0
+  elif [[ $Selected -gt ${#Items[@]} ]]; then
+    Selected=${#Items[@]}
+  fi
+    if [[ $Selected -eq $((height-1)) ]]; then
+      Selected=$((Selected-=1))
+    fi
+    if [[ "$i" -eq $Selected ]]; then
+      echo -n "[x] ${Items[i]}"
+    else
+      echo -n "[ ] ${Items[i]}"
+    fi
+  done
+}
+
 truncate_text() {
   local x="$1"
   local y="$2"
@@ -249,6 +290,19 @@ truncate_text() {
   echo -e $text
 }
 
+center() {
+  local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
+  local y="$2" ## Top left is origin
+  local flag="$3"
+  if [[ "$flag" == "x" ]]; then
+    local width="$4"
+    local center=$(((width/2)+x))
+  elif [[ "$flag" == "y" ]]; then
+    local height="$4"
+    local center_y=$(((height/2)+y))
+  fi
+}
+
 center_pos() {
   local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
   local y="$2" ## Top left is origin
@@ -257,4 +311,32 @@ center_pos() {
   local center_x=$(((width/2)+x))
   local center_y=$(((height/2)+y))
   curs_goto $center_x $center_y
+}
+
+header() {
+  draw_box 1 1 $COLUMNS 2 block
+  local header="${Mode^^}"
+  local len=${#header}
+  center_pos 1 2 $((COLUMNS-len)) 1
+  echo -n $header
+}
+
+subber() {
+  local text="$1"
+  local len=${#text}
+  draw_box 2 4 $((COLUMNS - 3)) 2 block
+  center_pos 1 5 $((COLUMNS-len)) 1
+  echo -n $text
+}
+
+base() {
+  header
+  subber "(q) to QUIT (1) to Leader"
+
+  read_keys 1.5
+  # Time can be adjust, aber warning on Epilepsy
+  case "$REPLY" in
+    "q") Mode="break"  ;;
+    "1") Mode="leader" ;;
+  esac
 }
