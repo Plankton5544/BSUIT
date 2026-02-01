@@ -49,14 +49,20 @@ clears() {
 
 read_keys(){
   local time="$1"
+
   if [[ -n $time ]]; then
     read -rsn 1 -t "$time"
   else
     read -rsn 1
   fi
+
   if [[ $REPLY == $'\e' ]]; then
     read -rsn 2
     # Outputs [A, B, C, D as arrow keys
+  elif [[ $REPLY == '\' ]]; then
+    unset History[-1]
+  else
+    History+=("$REPLY")
   fi
 }
 
@@ -65,6 +71,7 @@ init() {
   Mode="base"
   Selected=0
   Active=0
+  History=()
   Items=()
   buffer alt
 }
@@ -186,18 +193,22 @@ colored_draw_box() {
       ;;
   esac
   echo -e $color
-  for ((h=0; h<$((height+1)); h++)); do
-    for ((w=0; w<$((width+1)); w++)); do
-      curs_goto $((x+w)) $((y+h))
-      if [[ $h -eq 0 || $h -eq $height ]]; then
-        echo -en "$horz"
-      elif [[ $w -eq 0 || $w -eq $width ]]; then
-        echo -en "$vert"
-      else
-        echo -en " "
-      fi
-    done
+
+  # TOP & BOTTOM LINE
+  for ((i=1; i<$width; i++)); do
+    curs_goto $((x+i)) $y
+    echo -en "$horz"
+    curs_goto $((x+i)) $((y+height))
+    echo -en "$horz"
   done
+  # LEFT & RIGHT LINE
+  for ((i=1; i<$height; i++)); do
+    curs_goto $x $((y+i))
+    echo -en "$vert"
+    curs_goto $((x+width)) $((y+i))
+    echo -en "$vert"
+  done
+
   # TOP LEFT
   curs_goto $x $y
   echo -en $tl
@@ -277,6 +288,36 @@ display_menu() {
   done
 }
 
+display_field() {
+  local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
+  local y="$2" ## Top left is origin
+  local width="$3"
+  draw_box $x $y $width 2
+  curs_goto $((x + 1)) $((y + 1))
+
+
+  for letter in ${History[@]}; do
+    echo -n "$letter"
+  done
+}
+
+draw_progress() {
+  local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
+  local y="$2" ## Top left is origin
+  local width="$3"
+  local progress="$4"
+
+  draw_box $x $y $width 2
+  curs_goto $((x + 1)) $((y + 1))
+
+  #TODO FINISH THIS
+}
+
+#TODO Tree Views
+#TODO Status Bar
+#TODO Notifications
+#TODO Panels/Splits
+
 truncate_text() {
   local x="$1"
   local y="$2"
@@ -296,10 +337,10 @@ center() {
   local flag="$3"
   if [[ "$flag" == "x" ]]; then
     local width="$4"
-    local center=$(((width/2)+x))
+    return local center=$(((width/2)+x))
   elif [[ "$flag" == "y" ]]; then
     local height="$4"
-    local center_y=$(((height/2)+y))
+    return local center_y=$(((height/2)+y))
   fi
 }
 
@@ -317,7 +358,7 @@ header() {
   draw_box 1 1 $COLUMNS 2 block
   local header="${Mode^^}"
   local len=${#header}
-  center_pos 1 2 $((COLUMNS-len)) 1
+  center_pos 1 2 $((COLUMNS - len)) 1
   echo -n $header
 }
 
@@ -325,7 +366,7 @@ subber() {
   local text="$1"
   local len=${#text}
   draw_box 2 4 $((COLUMNS - 3)) 2 block
-  center_pos 1 5 $((COLUMNS-len)) 1
+  center_pos 1 5 $((COLUMNS - len)) 1
   echo -n $text
 }
 
@@ -340,3 +381,4 @@ base() {
     "1") Mode="leader" ;;
   esac
 }
+

@@ -5,10 +5,10 @@ leader() {
   header
   subber "(q) to QUIT (1) to Base"
 
-  read_keys 0.75
-  case "$REPLY" in
-    "q") Mode="break"  ;;
-    "1") Mode="base" ;;
+  read_keys 1
+  case $REPLY in
+    'q') Mode="break" ;;
+    '1') Mode="base" ;;
   esac
 }
 

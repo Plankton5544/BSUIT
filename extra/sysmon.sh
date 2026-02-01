@@ -285,6 +285,7 @@ dashboard() {
 
 main() {
   init
+  Mode="dashboard"
 
   while [[ "$Mode" != "break" ]]; do
     dispatch dashboard
