@@ -261,7 +261,7 @@ dashboard() {
 
   read_keys
   case "$REPLY" in
-    q) Mode="break" ;;
+    q) MODE="break" ;;
     r) ;; # Manual refresh
     1) SELECTED_TAB=0 ;;
     2) SELECTED_TAB=1 ;;
@@ -285,9 +285,9 @@ dashboard() {
 
 main() {
   init
-  Mode="dashboard"
+  MODE="dashboard"
 
-  while [[ "$Mode" != "break" ]]; do
+  while [[ "$MODE" != "break" ]]; do
     dispatch dashboard
   done
 

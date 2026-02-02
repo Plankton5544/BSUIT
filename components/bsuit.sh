@@ -1,12 +1,25 @@
 #!/bin/bash
 source ~/BSUIT/components/style.sh
 
+
 hush() {
   builtin hash "$1" 2>/dev/null;
 }
 
 nothing() {
   (:)
+}
+
+slow() {
+    local duration=$1  # Duration in milliseconds
+    local end=$((SECONDS + duration / 1000))
+    local start_millis=$((millisecs * 1000))
+    local sleep_time=$((start_millis % 1000))
+
+    # Busy wait for the remaining milliseconds
+    while [ $SECONDS -lt $end ]; do
+        nothing
+    done
 }
 
 curs_goto() {
@@ -60,28 +73,28 @@ read_keys(){
     read -rsn 2
     # Outputs [A, B, C, D as arrow keys
   elif [[ $REPLY == '\' ]]; then
-    unset History[-1]
+    unset HISTORY[-1]
   else
-    History+=("$REPLY")
+    HISTORY+=("$REPLY")
   fi
 }
 
 init() {
   curs_vis hide
-  Mode="base"
-  Selected=0
-  Active=0
-  History=()
-  Items=()
+  MODE="BASE"
+  SELECTED=0
+  ACTIVE=0
+  HISTORY=()
+  ITEMS=()
   buffer alt
 }
 
 cleanup() {
   curs_vis show
-  Mode=""
-  Selected=
-  Active=
-  Items=()
+  MODE=""
+  SELECTED=
+  ACTIVE=
+  ITEMS=()
   buffer normal
 }
 
@@ -90,7 +103,7 @@ dispatch() {
   modes_arr=("$@") # modes_arr is all of the render args
 
   for mode in "${modes_arr[@]}"; do
-    if [[ "$Mode" == "$mode" ]]; then # Check if Mode matches current mode
+    if [[ "$MODE" == "$mode" ]]; then # Check if MODE matches current mode
       clears screen
       "$mode" # Execute function named mode
     fi
@@ -260,30 +273,30 @@ display_menu() {
   local width="$3"
   local height="$4"
   # Engine Vars:
-  # Active Selected Items
+  # ACTIVE SELECTED ITEMS
 
-  if [[ "$Active" == "1" ]]; then
-    local exec="${Items[Selected]}"
+  if [[ "$ACTIVE" == "1" ]]; then
+    local exec="${ITEMS[SELECTED]}"
     "$exec" # Execute function named after the mode
-    Active=0
+    ACTIVE=0
     return
   fi
 
   draw_box $x $y $width $height single
-  for ((i=0; i<${#Items[@]}; i++)); do
+  for ((i=0; i<${#ITEMS[@]}; i++)); do
     curs_goto $((x+1)) $(((y+1)+i))
-  if [[ $Selected -lt 0 ]]; then
-    Selected=0
-  elif [[ $Selected -gt ${#Items[@]} ]]; then
-    Selected=${#Items[@]}
+  if [[ $SELECTED -lt 0 ]]; then
+    SELECTED=0
+  elif [[ $SELECTED -gt ${#ITEMS[@]} ]]; then
+    SELECTED=${#ITEMS[@]}
   fi
-    if [[ $Selected -eq $((height-1)) ]]; then
-      Selected=$((Selected-=1))
+    if [[ $SELECTED -eq $((height-1)) ]]; then
+      SELECTED=$((SELECTED-=1))
     fi
-    if [[ "$i" -eq $Selected ]]; then
-      echo -n "[x] ${Items[i]}"
+    if [[ "$i" -eq $SELECTED ]]; then
+      echo -n "[x] ${ITEMS[i]}"
     else
-      echo -n "[ ] ${Items[i]}"
+      echo -n "[ ] ${ITEMS[i]}"
     fi
   done
 }
@@ -296,7 +309,7 @@ display_field() {
   curs_goto $((x + 1)) $((y + 1))
 
 
-  for letter in ${History[@]}; do
+  for letter in ${HISTORY[@]}; do
     echo -n "$letter"
   done
 }
@@ -305,18 +318,56 @@ draw_progress() {
   local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
   local y="$2" ## Top left is origin
   local width="$3"
-  local progress="$4"
+  local raw_prog="$4"
+  ## Input does accept integer & with %
+  local executable="$5"
+  #Needs to be a function that this executes when done
 
-  draw_box $x $y $width 2
-  curs_goto $((x + 1)) $((y + 1))
+  local prog=0
+  local units=1
 
-  #TODO FINISH THIS
+  if [[ "$raw_prog" == *'%'* ]]; then
+    prog=${raw_prog//%/}
+  else
+    prog=$raw_prog
+  fi
+
+  if [[ $prog -lt 1 ]]; then
+    units=0
+    prog=0
+  elif [[ $prog -gt 100 ]]; then
+    if [[ -n $executable ]]; then
+      units=0
+      prog=0
+      "$executable"
+    else
+      units=$width
+      prog=100
+    fi
+  else
+    local units=$(( (width * prog) / 100 ))
+  fi
+
+  curs_goto $x $y
+
+  for i in $(seq 1 $width); do
+    if [[ $i -gt 0 && $i -le $units ]]; then
+      echo -n $BAR_FULL
+    else
+      echo -n $BAR_EMPTY
+    fi
+  done
 }
 
-#TODO Tree Views
-#TODO Status Bar
-#TODO Notifications
-#TODO Panels/Splits
+spinner() {
+  local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
+  local y="$2" ## Top left is origin
+  local state="$3" ## 1-8
+  local spin="SPIN_$state"
+
+  curs_goto $x $y
+  echo -n "${!spin}"
+}
 
 truncate_text() {
   local x="$1"
@@ -356,7 +407,7 @@ center_pos() {
 
 header() {
   draw_box 1 1 $COLUMNS 2 block
-  local header="${Mode^^}"
+  local header="${MODE^^}"
   local len=${#header}
   center_pos 1 2 $((COLUMNS - len)) 1
   echo -n $header
@@ -370,15 +421,15 @@ subber() {
   echo -n $text
 }
 
-base() {
+BASE() {
   header
   subber "(q) to QUIT (1) to Leader"
 
   read_keys 1.5
   # Time can be adjust, aber warning on Epilepsy
   case "$REPLY" in
-    "q") Mode="break"  ;;
-    "1") Mode="leader" ;;
+    "q") MODE="break"  ;;
+    "1") MODE="leader" ;;
   esac
 }
 

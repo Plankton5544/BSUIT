@@ -236,7 +236,7 @@ graph() {
 
   read_keys 2.5
   case "$REPLY" in
-    q) Mode="break" ;;
+    q) MODE="break" ;;
     g) SHOW_GRID=$((1-SHOW_GRID)) ;;
     v) SHOW_VALUES=$((1-SHOW_VALUES)) ;;
     '[D') # Left arrow
@@ -274,9 +274,9 @@ main() {
   fi
 
   init
-  Mode="graph"
+  MODE="graph"
 
-  while [[ "$Mode" != "break" ]]; do
+  while [[ "$MODE" != "break" ]]; do
     dispatch graph
   done
 
