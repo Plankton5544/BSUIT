@@ -1,6 +1,10 @@
 #!/bin/bash
 source ~/BSUIT/components/style.sh
 
+if [[ "$1" == *"external"* || "$1" == *"ext"* ]]; then
+  source ~/BSUIT/components/ext.sh
+fi
+
 
 hush() {
   builtin hash "$1" 2>/dev/null;
@@ -10,22 +14,20 @@ nothing() {
   (:)
 }
 
-slow() {
-    local duration=$1  # Duration in milliseconds
-    local end=$((SECONDS + duration / 1000))
-    local start_millis=$((millisecs * 1000))
-    local sleep_time=$((start_millis % 1000))
-
-    # Busy wait for the remaining milliseconds
-    while [ $SECONDS -lt $end ]; do
-        nothing
-    done
-}
-
 curs_goto() {
   local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
   local y="$2" ## Top left is origin
   echo -en "\e[${y};${x}H"
+}
+
+curs_center() {
+  local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
+  local y="$2" ## Top left is origin
+  local width="$3"
+  local height="$4"
+  local center_x=$(((width/2)+x))
+  local center_y=$(((height/2)+y))
+  curs_goto $center_x $center_y
 }
 
 curs_vis() {
@@ -40,7 +42,8 @@ buffer() {
   local flag="$1"
   case "$flag" in
     "alt") echo -en "\e[?1049h"  ;;
-    *)     echo -en "\e[?1049l"  ;; # Defualts to Alt Buff Off
+    *)     echo -en "\e[?1049l"  ;;
+    # Defualts to Alt Buff Off
   esac
 }
 
@@ -143,6 +146,7 @@ draw_box() {
       local bl="$BX_BL"  local br="$BX_BR"
       ;;
   esac
+
   # TOP & BOTTOM LINE
   for ((i=1; i<$width; i++)); do
     curs_goto $((x+i)) $y
@@ -272,8 +276,15 @@ display_menu() {
   local y="$2" ## Top left is origin
   local width="$3"
   local height="$4"
-  # Engine Vars:
-  # ACTIVE SELECTED ITEMS
+
+  if [[ $SELECTED -lt 0 ]]; then
+    SELECTED=0
+  elif [[ $SELECTED -gt ${#ITEMS[@]} ]]; then
+    SELECTED=${#ITEMS[@]}
+  fi
+  if [[ $SELECTED -eq $((height-1)) ]]; then
+    SELECTED=$((SELECTED-=1))
+  fi
 
   if [[ "$ACTIVE" == "1" ]]; then
     local exec="${ITEMS[SELECTED]}"
@@ -285,14 +296,6 @@ display_menu() {
   draw_box $x $y $width $height single
   for ((i=0; i<${#ITEMS[@]}; i++)); do
     curs_goto $((x+1)) $(((y+1)+i))
-  if [[ $SELECTED -lt 0 ]]; then
-    SELECTED=0
-  elif [[ $SELECTED -gt ${#ITEMS[@]} ]]; then
-    SELECTED=${#ITEMS[@]}
-  fi
-    if [[ $SELECTED -eq $((height-1)) ]]; then
-      SELECTED=$((SELECTED-=1))
-    fi
     if [[ "$i" -eq $SELECTED ]]; then
       echo -n "[x] ${ITEMS[i]}"
     else
@@ -388,28 +391,20 @@ center() {
   local flag="$3"
   if [[ "$flag" == "x" ]]; then
     local width="$4"
-    return local center=$(((width/2)+x))
+    local center=$(((width/2)+x))
   elif [[ "$flag" == "y" ]]; then
     local height="$4"
-    return local center_y=$(((height/2)+y))
+    local center=$(((height/2)+y))
   fi
-}
 
-center_pos() {
-  local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
-  local y="$2" ## Top left is origin
-  local width="$3"
-  local height="$4"
-  local center_x=$(((width/2)+x))
-  local center_y=$(((height/2)+y))
-  curs_goto $center_x $center_y
+  echo -n $center
 }
 
 header() {
   draw_box 1 1 $COLUMNS 2 block
   local header="${MODE^^}"
   local len=${#header}
-  center_pos 1 2 $((COLUMNS - len)) 1
+  curs_center 1 2 $((COLUMNS - len)) 1
   echo -n $header
 }
 
@@ -417,7 +412,7 @@ subber() {
   local text="$1"
   local len=${#text}
   draw_box 2 4 $((COLUMNS - 3)) 2 block
-  center_pos 1 5 $((COLUMNS - len)) 1
+  curs_center 1 5 $((COLUMNS - len)) 1
   echo -n $text
 }
 
