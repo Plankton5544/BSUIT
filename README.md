@@ -4,14 +4,14 @@ A lightweight, dependency-free Terminal User Interface (TUI) library for Bash th
 
 ## Features
 
-- **Zero Dependencies** - Uses only bash builtins and ANSI escape codes
--  **Rich Styling** - Comprehensive color and text formatting options
--  **Box Drawing** - Multiple border styles (single, double, bold, rounded, block)
--  **UI Components** - Menus, progress bars, spinners, text fields, and more
--  **Cursor Control** - Precise cursor positioning and visibility management
--  **Mode-based Rendering** - Efficient state management and rendering system
--  **Keyboard Input** - Arrow keys, special characters, and timed reads
--  **Alternative Buffer** - Non-destructive screen management
+  -  **Zero Dependencies** - Uses only bash builtins and ANSI escape codes
+  -  **Rich Styling** - Comprehensive color and text formatting options
+  -  **Box Drawing** - Multiple border styles (single, double, bold, rounded, block)
+  -  **UI Components** - Menus, progress bars, spinners, text fields, and more
+  -  **Cursor Control** - Precise cursor positioning and visibility management
+  -  **Mode-based Rendering** - Efficient state management and rendering system
+  -  **Keyboard Input** - Arrow keys, special characters, and timed reads
+  -  **Alternative Buffer** - Non-destructive screen management
 
 ## Limitations
 
@@ -51,7 +51,7 @@ my_screen() {
   header
   draw_box 10 10 40 10 single
   draw_text 12 12 "Hello, BSUIT!"
-  
+
   read_keys 1
   case "$REPLY" in
     q) MODE="break" ;;
@@ -61,11 +61,11 @@ my_screen() {
 main() {
   init
   MODE="my_screen"
-  
+
   while [[ "$MODE" != "break" ]]; do
     dispatch my_screen
   done
-  
+
   cleanup
 }
 
@@ -346,10 +346,10 @@ source ~/BSUIT/components/bsuit.sh
 menu_screen() {
   header
   draw_text 5 5 "Select an option:"
-  
+
   ITEMS=("Start" "Settings" "Quit")
   display_menu 5 7 20 5
-  
+
   if [[ "$ACTIVE" == "1" ]]; then
     case "$SELECTED" in
       0) MODE="start" ;;
@@ -358,18 +358,18 @@ menu_screen() {
     esac
     ACTIVE=0
   fi
-  
+
   read_keys 0.1
 }
 
 main() {
   init
   MODE="menu_screen"
-  
+
   while [[ "$MODE" != "break" ]]; do
     dispatch menu_screen
   done
-  
+
   cleanup
 }
 
@@ -385,15 +385,15 @@ source ~/BSUIT/components/bsuit.sh
 progress_screen() {
   header
   subber "Loading..."
-  
+
   draw_progress 10 10 50 $PROGRESS
-  
+
   PROGRESS=$((PROGRESS + 5))
-  
+
   if [[ $PROGRESS -ge 100 ]]; then
     MODE="break"
   fi
-  
+
   read_keys 0.1
 }
 
@@ -401,11 +401,11 @@ main() {
   init
   MODE="progress_screen"
   PROGRESS=0
-  
+
   while [[ "$MODE" != "break" ]]; do
     dispatch progress_screen
   done
-  
+
   cleanup
 }
 
@@ -418,6 +418,7 @@ Check the `examples/` directory for complete applications:
 - **example.sh** - Debug script for unofficial testing
 - **sysmon.sh** - System monitoring dashboard
 - **visualizer.sh** - CSV data visualization
+
 Note:
 - Some examples are AI generated, please know what you're executing
 
@@ -430,8 +431,10 @@ source ~/BSUIT/components/bsuit.sh external
 # or
 source ~/BSUIT/components/bsuit.sh ext
 ```
-
 This loads `ext.sh` which may include additional functions requiring external tools.
+
+Note:
+- This isn't implemented in the current release, please be patient for eventual inclusion.
 
 ## Best Practices
 
@@ -445,10 +448,11 @@ This loads `ext.sh` which may include additional functions requiring external to
 ## Terminal Compatibility
 
 BSUIT uses standard ANSI escape sequences and should work on:
-- ✅ **Linux terminals** (gnome-terminal, konsole, xterm, **kitty** etc.)
-- ✅ macOS Terminal.app and iTerm2
-- ✅ Windows Terminal
-- ✅ **Most modern terminal emulators supporting ANSI codes**
+-  **Linux terminals** (gnome-terminal, konsole, xterm, **kitty** etc.)
+-  macOS Terminal.app and iTerm2
+-  Windows Terminal
+-  **Most modern terminal emulators supporting ANSI codes**
+
 Note:
 - Some legacy terminals may have limited box-drawing character support.
 - Emphasized terminals above have shown success in running
