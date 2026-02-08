@@ -78,9 +78,9 @@ clears() {
     "screen-curs") buffer write "\e[1J" ;;
     "screen")      buffer write "\e[2J" ;;
     "inline")      buffer write "\e[K"  ;;
+    "line")        buffer write "\e[2K" ;;
     "curs-line")   buffer write "\e[0K" ;;
     "line-curs")   buffer write "\e[1K" ;;
-    "line")        buffer write "\e[2K" ;;
     *)             buffer write "\e[2J" ;;
   esac
 }
@@ -226,7 +226,18 @@ draw_aligned_text() {
     esac
 }
 
-draw_progress() {
+colored() {
+  local color_code="${!1}"  # Get color code via indirect expansion
+  shift                     # Remove color arg
+  local function="$1"       # Get function name
+  shift                     # Remove function arg
+
+  [[ -n "$color_code" ]] && buffer write "$color_code"
+  "$function" "$@"          # Call function with remaining args
+  buffer write "$RST"
+}
+
+display_progress() {
   local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
   local y="$2" ## Top left is origin
   local width="$3"
@@ -271,7 +282,7 @@ draw_progress() {
   done
 }
 
-draw_spinner() {
+display_spinner() {
   local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
   local y="$2" ## Top left is origin
   local state="$3" ## 1-8
@@ -314,16 +325,6 @@ display_menu() {
   done
 }
 
-colored() {
-  local color_code="${!1}"  # Get color code via indirect expansion
-  shift                     # Remove color arg
-  local function="$1"       # Get function name
-  shift                     # Remove function arg
-
-  [[ -n "$color_code" ]] && buffer write "$color_code"
-  "$function" "$@"          # Call function with remaining args
-  buffer write "$RST"
-}
 
 display_field() {
   local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
