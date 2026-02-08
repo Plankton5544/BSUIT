@@ -7,24 +7,25 @@ A lightweight, dependency-free Terminal User Interface (TUI) library for Bash th
   -  **Zero Dependencies** - Uses only bash builtins and ANSI escape codes
   -  **Rich Styling** - Comprehensive color and text formatting options
   -  **Box Drawing** - Multiple border styles (single, double, bold, rounded, block)
-  -  **UI Components** - Menus, progress bars, spinners, text fields, and more
-  -  **Cursor Control** - Precise cursor positioning and visibility management
+  -  **UI Components** - Menus, progress bars, spinners, and more
+  -  **Cursor Control** - Precise cursor positioning within buffer and easy visibility management
   -  **Mode-based Rendering** - Efficient state management and rendering system
+  -  **Buffered Screen** - Uses buffered screens for minimal screen tearing and flickering
   -  **Keyboard Input** - Arrow keys, special characters, and timed reads
   -  **Alternative Buffer** - Non-destructive screen management
 
 ## Limitations
 
--   Visual Artifacts - Screen flickering and redraw artifacts during rapid updates
--   Performance - Slower than ncurses-based TUIs due to character-by-character drawing
--   No Double Buffering - Lacks proper frame buffering, causing **visual tearing**
--   Coordinate Quirks - Manual cursor positioning can be error-prone
--   Full Redraws Required - Each mode change clears and redraws entire screen
--   Terminal Dependency - Rendering quality varies significantly between terminal emulators
--   Limited Input - No mouse support, basic keyboard handling only
+-   **Terminal Dependency** - Rendering quality varies significantly between terminal emulators
+-   **Performance** - Slower than ncurses-based TUIs due to base language
+-   Double Buffering - Lacks proper double buffer difference checks
+-   Full Redraw Lag - Each minimal change clears and redraws entire screen
+-   Visual Artifacts - Minimal drawing artifacts during rapid changes
+-   Coordinate Quirks - Cursor positioning can be error-prone
+-   Limited Input - No mouse or enter support, basic keyboard handling only
 -   Single-threaded - No async updates or background processing
 
-Trade-off: This library prioritizes portability and zero dependencies over rendering performance. For production TUIs with complex layouts, consider dedicated frameworks.
+**Trade-off**: This library prioritizes portability and zero dependencies over rendering performance. For production TUIs with complex layouts, consider dedicated frameworks.
 
 ## Installation
 
@@ -54,7 +55,7 @@ my_screen() {
 
   read_keys 1
   case "$REPLY" in
-    q) MODE="break" ;;
+    'q') MODE="break" ;;
   esac
 }
 
@@ -69,7 +70,7 @@ main() {
   cleanup
 }
 
-main $@
+main "$@"
 ```
 
 ## Core Concepts
@@ -79,8 +80,8 @@ main $@
 Always wrap your TUI application with `init` and `cleanup`:
 
 ```bash
-init      # Sets up: hides cursor, enters alt buffer, initializes state
-cleanup   # Restores: shows cursor, exits alt buffer, clears state
+init      # Sets up: hides cursor, enters alt buffer, initializes state, and starts screen buffer
+cleanup   # Restores: shows cursor, exits alt buffer, clears state, and empties screen buffer
 ```
 
 ### Mode-based Rendering
@@ -100,6 +101,8 @@ dispatch mode1 mode2 mode3  # Renders current mode from provided list
 - `HISTORY` - Array of user input characters
 - `ITEMS` - Array of menu items
 - `REPLY` - Last key pressed (from `read_keys`)
+- `SCREEN_BUFFER` - String for final output to screen
+- `BUFFERED` - String that's waiting to be rendered
 
 ## API Reference
 
@@ -107,6 +110,7 @@ dispatch mode1 mode2 mode3  # Renders current mode from provided list
 
 #### `curs_goto x y`
 Position cursor at coordinates (x, y). Origin (1,1) is top-left.
+Pushes this info into screen buffer
 
 ```bash
 curs_goto 10 5  # Move to column 10, row 5
@@ -114,6 +118,7 @@ curs_goto 10 5  # Move to column 10, row 5
 
 #### `curs_center x y width height`
 Position cursor at center of a box.
+Pushes this info into screen buffer
 
 ```bash
 curs_center 1 1 $COLUMNS $LINES  # Center of screen
@@ -129,31 +134,53 @@ curs_vis show  # Show cursor (default)
 
 ### Screen Management
 
-#### `buffer [alt|normal]`
-Switch between normal and alternative screen buffer.
+#### `buffer [write|flush|clears|alt|normal]`
+Manage different buffers states
+Buffers: Screen Buffer, Buffered, Alternate Buffer
 
 ```bash
-buffer alt     # Enter alternative buffer
-buffer normal  # Exit to normal buffer
+buffer alt              # Enter alternative buffer
+buffer normal           # Exit to normal buffer
+
+buffer write "info"     # Writes info onto screen buffer
+buffer flush            # Finds diff of screen buffer and buffered
+buffer clears           # Clears screen buffer
 ```
 
 #### `clears [mode]`
 Clear portions of the screen.
+Pushes the clear to Screen Buffer
 
 **Modes:**
 - `display` - Clear from cursor to end
+- `curs-screen` - Clear from curs to screen end
+- `screen-curs` - Clear from screen to curs
 - `screen` - Clear entire screen
-- `saved` - Clear scrollback buffer
+- `inline` - Clears inside line
 - `line` - Clear entire line
 - `curs-line` - Clear from cursor to end of line
 - `line-curs` - Clear from start of line to cursor
 
 ```bash
-clears screen  # Clear entire screen
-clears line    # Clear current line
+display      # Clear from cursor to end
+curs-screen  # Clear from curs to screen end
+screen-curs  # Clear from screen to curs
+screen       # Clear entire screen
+inline       # Clears inside line
+line         # Clear entire line
+curs-line    # Clear from cursor to end of line
+line-curs    # Clear from start of line to cursor
 ```
 
 ### Drawing Functions
+
+#### `colored color function <args>'
+Draw a colored function
+Referencing a color from style.sh
+
+```bash
+colored BLDGRN draw_box 5 5 30 10 rounded
+```
 
 #### `draw_box x y width height [style]`
 Draw a box with specified style.
@@ -162,13 +189,6 @@ Draw a box with specified style.
 
 ```bash
 draw_box 5 5 30 10 double
-```
-
-#### `colored_draw_box x y width height style color`
-Draw a colored box.
-
-```bash
-colored_draw_box 5 5 30 10 rounded "$BLDGRN"
 ```
 
 #### `draw_text x y text`
@@ -185,13 +205,6 @@ Draw aligned text.
 draw_aligned_text 40 10 "Centered" center
 ```
 
-#### `truncate_text x y text limit`
-Draw text truncated to limit.
-
-```bash
-truncate_text 5 5 "Very long text here" 10
-```
-
 ### UI Components
 
 #### `display_menu x y width height`
@@ -205,7 +218,7 @@ display_menu 10 10 30 5
 
 Navigation:
 - `[A` / `[B` - Up/Down arrows (move selection)
-- Enter - Sets `ACTIVE=1` and executes item as function
+- 'E' - Sets `ACTIVE=1` and executes item as function
 
 #### `display_field x y width`
 Text input field using `HISTORY` array.
@@ -215,20 +228,20 @@ HISTORY=()
 display_field 10 10 30
 ```
 
-#### `draw_progress x y width progress [callback]`
+#### `display_progress x y width progress [callback]`
 Draw a progress bar.
 
 ```bash
-draw_progress 10 10 40 75        # 75% progress
-draw_progress 10 10 40 "50%"     # With % sign
-draw_progress 10 10 40 100 done  # Calls 'done' function at 100%
+display_progress 10 10 40 75        # 75% progress
+display_progress 10 10 40 "50%"     # With % sign
+display_progress 10 10 40 100 done  # Calls 'done' function at 100%
 ```
 
-#### `spinner x y state`
+#### `display_spinner x y state`
 Draw an animated spinner (states 1-8).
 
 ```bash
-spinner 10 10 $STATE
+display_spinner 10 10 $STATE
 STATE=$(( (STATE % 8) + 1 ))  # Cycle through states
 ```
 
@@ -244,15 +257,23 @@ read_keys 2     # 2 second timeout
 
 # Check response
 case "$REPLY" in
-  q) MODE="break" ;;
-  "[A") echo "Up arrow" ;;
-  "[B") echo "Down arrow" ;;
-  "[C") echo "Right arrow" ;;
-  "[D") echo "Left arrow" ;;
+  'q') MODE="break"           ;;
+  'e') echo "Set ACTIVE=1"    ;;
+  "[A") echo "Up arrow"       ;;
+  "[B") echo "Down arrow"     ;;
+  "[C") echo "Right arrow"    ;;
+  "[D") echo "Left arrow"     ;;
 esac
 ```
 
 ### Helper Functions
+
+#### `truncate_text x y text limit`
+Draw text truncated to limit.
+
+```bash
+truncate_text 5 5 "Very long text here" 10
+```
 
 #### `center x y [x|y] dimension`
 Calculate center position.
@@ -373,7 +394,7 @@ main() {
   cleanup
 }
 
-main $@
+main "$@"
 ```
 
 ### Progress Bar Demo
@@ -409,18 +430,18 @@ main() {
   cleanup
 }
 
-main $@
+main "$@"
 ```
 
 ### Advanced Examples
 
 Check the `examples/` directory for complete applications:
 - **example.sh** - Debug script for unofficial testing
-- **sysmon.sh** - System monitoring dashboard
-- **visualizer.sh** - CSV data visualization
+- **____.sh** - System monitoring dashboard (For future example scripts)
 
 Note:
-- Some examples are AI generated, please know what you're executing
+- **Some** examples are **AI generated**, please know what you're executing
+- **Feel free to contribute** any example scripts to demonstrate TUI's ability
 
 ## External Mode
 
@@ -434,7 +455,7 @@ source ~/BSUIT/components/bsuit.sh ext
 This loads `ext.sh` which may include additional functions requiring external tools.
 
 Note:
-- This isn't implemented in the current release, please be patient for eventual inclusion.
+- **This isn't implemented in the current release**, please be patient for eventual inclusion.
 
 ## Best Practices
 
@@ -448,14 +469,14 @@ Note:
 ## Terminal Compatibility
 
 BSUIT uses standard ANSI escape sequences and should work on:
--  **Linux terminals** (gnome-terminal, konsole, xterm, **kitty** etc.)
+-  **Linux terminals** (gnome-terminal, konsole, xterm, **kitty**, ghostty, etc.)
 -  macOS Terminal.app and iTerm2
 -  Windows Terminal
 -  **Most modern terminal emulators supporting ANSI codes**
 
 Note:
 - Some legacy terminals may have limited box-drawing character support.
-- Emphasized terminals above have shown success in running
+- **Emphasized** terminals above have shown success in running
 
 ## Troubleshooting
 
@@ -465,17 +486,17 @@ Some terminals don't respect cursor visibility commands. Try:
 trap cleanup EXIT  # Ensure cleanup runs on script exit
 ```
 Note:
-- This does call an external function, or not builtins-only
+- This does call an **external** function, or not builtins-only
 
 ### Box characters appear as question marks
-Your terminal font may not support Unicode box-drawing characters. Use a modern monospace font like:
+**Your terminal font may not support Unicode box-drawing characters**. Use a modern monospace font like:
 - JetBrains Mono
 - **Fira Code**
 - Cascadia Code
 - DejaVu Sans Mono
 
 Note:
-- Emphasized fonts above have tested to be working
+- **Emphasized** fonts above have tested to be working
 
 ### Arrow keys not working
 Ensure you're reading the full escape sequence:
@@ -487,16 +508,14 @@ Note:
 
 ## Performance Notes
 
-- **Minimize redraws**: Only clear and redraw when state changes
 - **Use timeouts wisely**: Lower timeouts = higher CPU usage
-- **Batch cursor movements**: Multiple `echo -en` calls are faster than separate `curs_goto` calls
 
 ## Contributing
 
 Contributions welcome! Please ensure:
 - Functions use only bash builtins (no external commands)
 - Code follows existing style conventions
-- Examples demonstrate new features
+- Examples demonstrate new features or overall abilities
 
 Note:
 - Check if bash builtins (type -t <command>)
@@ -504,8 +523,8 @@ Note:
 
 ## License
 
-                      GNU GENERAL PUBLIC LICENSE
-                       Version 3, 29 June 2007
+GNU GENERAL PUBLIC LICENSE
+ Version 3, 29 June 2007
 
 ## Credits
 

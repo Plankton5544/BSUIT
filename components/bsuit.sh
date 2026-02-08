@@ -1,10 +1,41 @@
 #!/bin/bash
 source ~/BSUIT/components/style.sh
 
-if [[ "$1" == *"external"* || "$1" == *"ext"* ]]; then
-  source ~/BSUIT/components/ext.sh
-fi
+init() {
+  curs_vis hide
+  SCREEN_BUFFER=""
+  BUFFERED=""
+  MODE="BASE"
+  SELECTED=0
+  ACTIVE=0
+  HISTORY=()
+  ITEMS=()
+  buffer alternate
+}
 
+buffer() {
+  local flag="$1"
+  case "$flag" in
+    "write")
+      local input="$2"
+      SCREEN_BUFFER+="$input"
+      ;;
+    "flush")
+      if [[ "$SCREEN_BUFFER" != "$BUFFERED" ]]; then
+        echo -ne "\e[1;1H$SCREEN_BUFFER"
+        # Go to 1,1 and write entire buffer
+        BUFFERED="$SCREEN_BUFFER"
+      fi
+      buffer clears
+      ;;
+    "clears")
+      SCREEN_BUFFER=""
+      ;;
+    "alternate") echo -en "\e[?1049h"  ;;
+    *)     echo -en "\e[?1049l"  ;;
+    # Defualts to Alternative Buff Off
+  esac
+}
 
 hush() {
   builtin hash "$1" 2>/dev/null;
@@ -14,10 +45,19 @@ nothing() {
   (:)
 }
 
+curs_vis() {
+  local flag="$1"
+  case "$flag" in
+    "hide") echo -en "\e[?25l" ;; # Hides Cursor
+    *)      echo -en "\e[?25h" ;; # Defualts To Show
+  esac
+}
+
 curs_goto() {
   local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
   local y="$2" ## Top left is origin
-  echo -en "\e[${y};${x}H"
+  buffer write "\e[${y};${x}H"
+  # Writes cursor instruction to buffer
 }
 
 curs_center() {
@@ -30,36 +70,18 @@ curs_center() {
   curs_goto $center_x $center_y
 }
 
-curs_vis() {
-  local flag="$1"
-  case "$flag" in
-    "hide") echo -en "\e[?25l" ;;
-    *)      echo -en "\e[?25h" ;; # Defualts To Show
-  esac
-}
-
-buffer() {
-  local flag="$1"
-  case "$flag" in
-    "alt") echo -en "\e[?1049h"  ;;
-    *)     echo -en "\e[?1049l"  ;;
-    # Defualts to Alt Buff Off
-  esac
-}
-
 clears() {
   local flag="$1"
   case "$flag" in
-    "display") echo -en "\e[J";;
-    "curs-screen") echo -en "\e[0J";;
-    "screen-curs") echo -en "\e[1J";;
-    "screen") echo -en "\e[2J";;
-    "saved") echo -en "\e[3J";;
-    "inline") echo -en "\e[K";;
-    "curs-line") echo -en "\e[0K";;
-    "line-curs") echo -en "\e[1K";;
-    "line") echo -en "\e[2K";;
-    *) ;;
+    "display")     buffer write "\e[J"  ;;
+    "curs-screen") buffer write "\e[0J" ;;
+    "screen-curs") buffer write "\e[1J" ;;
+    "screen")      buffer write "\e[2J" ;;
+    "inline")      buffer write "\e[K"  ;;
+    "curs-line")   buffer write "\e[0K" ;;
+    "line-curs")   buffer write "\e[1K" ;;
+    "line")        buffer write "\e[2K" ;;
+    *)             buffer write "\e[2J" ;;
   esac
 }
 
@@ -76,28 +98,22 @@ read_keys(){
     read -rsn 2
     # Outputs [A, B, C, D as arrow keys
   elif [[ $REPLY == '\' ]]; then
-    unset HISTORY[-1]
+    unset "HISTORY[-1]"
   else
     HISTORY+=("$REPLY")
   fi
 }
 
-init() {
-  curs_vis hide
-  MODE="BASE"
-  SELECTED=0
-  ACTIVE=0
-  HISTORY=()
-  ITEMS=()
-  buffer alt
-}
 
 cleanup() {
   curs_vis show
-  MODE=""
-  SELECTED=
-  ACTIVE=
-  ITEMS=()
+  unset "SCREEN_BUFFER"
+  unset "BUFFERED"
+  unset "MODE"
+  unset "SELECTED"
+  unset "ACTIVE"
+  unset "HISTORY"
+  unset "ITEMS"
   buffer normal
 }
 
@@ -107,8 +123,10 @@ dispatch() {
 
   for mode in "${modes_arr[@]}"; do
     if [[ "$MODE" == "$mode" ]]; then # Check if MODE matches current mode
+      buffer clears
       clears screen
       "$mode" # Execute function named mode
+      buffer flush
     fi
   done
 }
@@ -150,103 +168,40 @@ draw_box() {
   # TOP & BOTTOM LINE
   for ((i=1; i<$width; i++)); do
     curs_goto $((x+i)) $y
-    echo -en "$horz"
+    buffer write "$horz"
     curs_goto $((x+i)) $((y+height))
-    echo -en "$horz"
+    buffer write "$horz"
   done
+
   # LEFT & RIGHT LINE
   for ((i=1; i<$height; i++)); do
     curs_goto $x $((y+i))
-    echo -en "$vert"
+    buffer write "$vert"
     curs_goto $((x+width)) $((y+i))
-    echo -en "$vert"
+    buffer write "$vert"
   done
+
   # TOP LEFT
   curs_goto $x $y
-  echo -en $tl
+  buffer write $tl
   # TOP RIGHT
   curs_goto $((x+width)) $y
-  echo -en $tr
+  buffer write $tr
   # BOTTOM LEFT
   curs_goto $x $((y+height))
-  echo -en $bl
+  buffer write $bl
   # BOTTOM RIGHT
   curs_goto $((x+width)) $((y+height))
-  echo -en $br
+  buffer write $br
   }
 
-colored_draw_box() {
-  local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
-  local y="$2" ## Top left is origin
-  local width="$3"
-  local height="$4"
-  local style="$5" #Single Double Bold Rounded Block
-  local color="$6"
-  case $style in
-    "double")
-      local vert="$DBX_V" local horz="$DBX_H"
-      local tl="$DBX_TL"  local tr="$DBX_TR"
-      local bl="$DBX_BL"  local br="$DBX_BR"
-      ;;
-    "bold")
-      local vert="$HBX_V" local horz="$HBX_H"
-      local tl="$HBX_TL"  local tr="$HBX_TR"
-      local bl="$HBX_BL"  local br="$HBX_BR"
-      ;;
-    "rounded")
-      local vert="$BX_V" local horz="$BX_H"
-      local tl="$RBX_TL" local tr="$RBX_TR"
-      local bl="$RBX_BL" local br="$RBX_BR"
-      ;;
-    "block")
-      local vert="$BLK_FULL" local horz="$BLK_FULL"
-      local tl="$BLK_FULL"   local tr="$BLK_FULL"
-      local bl="$BLK_FULL"   local br="$BLK_FULL"
-      ;;
-    *)
-      local tl="$BX_TL"  local tr="$BX_TR"
-      local vert="$BX_V" local horz="$BX_H"
-      local bl="$BX_BL"  local br="$BX_BR"
-      ;;
-  esac
-  echo -e $color
-
-  # TOP & BOTTOM LINE
-  for ((i=1; i<$width; i++)); do
-    curs_goto $((x+i)) $y
-    echo -en "$horz"
-    curs_goto $((x+i)) $((y+height))
-    echo -en "$horz"
-  done
-  # LEFT & RIGHT LINE
-  for ((i=1; i<$height; i++)); do
-    curs_goto $x $((y+i))
-    echo -en "$vert"
-    curs_goto $((x+width)) $((y+i))
-    echo -en "$vert"
-  done
-
-  # TOP LEFT
-  curs_goto $x $y
-  echo -en $tl
-  # TOP RIGHT
-  curs_goto $((x+width)) $y
-  echo -en $tr
-  # BOTTOM LEFT
-  curs_goto $x $((y+height))
-  echo -en $bl
-  # BOTTOM RIGHT
-  curs_goto $((x+width)) $((y+height))
-  echo -en $br
-  echo -en $RST
-}
 
 draw_text() {
   local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
   local y="$2" ## Top left is origin
   local text="$3"
   curs_goto $x $y
-  echo -n $text
+  buffer write $text
 }
 
 draw_aligned_text() {
@@ -258,63 +213,17 @@ draw_aligned_text() {
     case $direction in
       "center")
         curs_goto $((x-(length/2))) $y
-        echo -n "$text"
+        buffer write "$text"
         ;;
       "right")
         curs_goto $x $y
-        echo -n "$text"
+        buffer write "$text"
         ;;
       *) # Left
         curs_goto $((x-length)) $y
-        echo -n "$text"
+        buffer write "$text"
         ;;
     esac
-}
-
-display_menu() {
-  local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
-  local y="$2" ## Top left is origin
-  local width="$3"
-  local height="$4"
-
-  if [[ $SELECTED -lt 0 ]]; then
-    SELECTED=0
-  elif [[ $SELECTED -gt ${#ITEMS[@]} ]]; then
-    SELECTED=${#ITEMS[@]}
-  fi
-  if [[ $SELECTED -eq $((height-1)) ]]; then
-    SELECTED=$((SELECTED-=1))
-  fi
-
-  if [[ "$ACTIVE" == "1" ]]; then
-    local exec="${ITEMS[SELECTED]}"
-    "$exec" # Execute function named after the mode
-    ACTIVE=0
-    return
-  fi
-
-  draw_box $x $y $width $height single
-  for ((i=0; i<${#ITEMS[@]}; i++)); do
-    curs_goto $((x+1)) $(((y+1)+i))
-    if [[ "$i" -eq $SELECTED ]]; then
-      echo -n "[x] ${ITEMS[i]}"
-    else
-      echo -n "[ ] ${ITEMS[i]}"
-    fi
-  done
-}
-
-display_field() {
-  local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
-  local y="$2" ## Top left is origin
-  local width="$3"
-  draw_box $x $y $width 2
-  curs_goto $((x + 1)) $((y + 1))
-
-
-  for letter in ${HISTORY[@]}; do
-    echo -n "$letter"
-  done
 }
 
 draw_progress() {
@@ -355,21 +264,77 @@ draw_progress() {
 
   for i in $(seq 1 $width); do
     if [[ $i -gt 0 && $i -le $units ]]; then
-      echo -n $BAR_FULL
+      buffer write $BAR_FULL
     else
-      echo -n $BAR_EMPTY
+      buffer write $BAR_EMPTY
     fi
   done
 }
 
-spinner() {
+draw_spinner() {
   local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
   local y="$2" ## Top left is origin
   local state="$3" ## 1-8
   local spin="SPIN_$state"
 
   curs_goto $x $y
-  echo -n "${!spin}"
+  buffer write "${!spin}"
+}
+
+display_menu() {
+  local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
+  local y="$2" ## Top left is origin
+  local width="$3"
+  local height="$4"
+
+  if [[ $SELECTED -lt 0 ]]; then
+    SELECTED=0
+  elif [[ $SELECTED -gt ${#ITEMS[@]} ]]; then
+    SELECTED=${#ITEMS[@]}
+  fi
+  if [[ $SELECTED -eq $((height-1)) ]]; then
+    SELECTED=$((SELECTED-=1))
+  fi
+
+  if [[ "$ACTIVE" == "1" ]]; then
+    local exec="${ITEMS[SELECTED]}"
+    "$exec" # Execute function named after the mode
+    ACTIVE=0
+    return
+  fi
+
+  draw_box $x $y $width $height single
+  for ((i=0; i<${#ITEMS[@]}; i++)); do
+    curs_goto $((x+1)) $(((y+1)+i))
+    if [[ "$i" -eq $SELECTED ]]; then
+      buffer write "[x] ${ITEMS[i]}"
+    else
+      buffer write "[ ] ${ITEMS[i]}"
+    fi
+  done
+}
+
+colored() {
+  local color_code="${!1}"  # Get color code via indirect expansion
+  shift                     # Remove color arg
+  local function="$1"       # Get function name
+  shift                     # Remove function arg
+
+  [[ -n "$color_code" ]] && buffer write "$color_code"
+  "$function" "$@"          # Call function with remaining args
+  buffer write "$RST"
+}
+
+display_field() {
+  local x="$1" ## Reversed because of LINES(y) COLUMNS(x)
+  local y="$2" ## Top left is origin
+  local width="$3"
+  draw_box $x $y $width 2
+  curs_goto $((x + 1)) $((y + 1))
+
+  for letter in ${HISTORY[@]}; do
+    buffer write "$letter"
+  done
 }
 
 truncate_text() {
@@ -382,7 +347,7 @@ truncate_text() {
       text=${text:0:$limit}
     fi
   curs_goto $x $y
-  echo -e $text
+  echo -n "$text"
 }
 
 center() {
@@ -397,7 +362,7 @@ center() {
     local center=$(((height/2)+y))
   fi
 
-  echo -n $center
+  echo -n "$center"
 }
 
 header() {
@@ -405,7 +370,7 @@ header() {
   local header="${MODE^^}"
   local len=${#header}
   curs_center 1 2 $((COLUMNS - len)) 1
-  echo -n $header
+  buffer write "$header"
 }
 
 subber() {
@@ -413,7 +378,8 @@ subber() {
   local len=${#text}
   draw_box 2 4 $((COLUMNS - 3)) 2 block
   curs_center 1 5 $((COLUMNS - len)) 1
-  echo -n $text
+
+  buffer write "$text"
 }
 
 BASE() {
@@ -421,10 +387,11 @@ BASE() {
   subber "(q) to QUIT (1) to Leader"
 
   read_keys 1.5
-  # Time can be adjust, aber warning on Epilepsy
+
   case "$REPLY" in
     "q") MODE="break"  ;;
     "1") MODE="leader" ;;
   esac
 }
+
 
