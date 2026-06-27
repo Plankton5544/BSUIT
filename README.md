@@ -1,3 +1,10 @@
+DEPRECIATED!!
+
+Go to https://codeberg.org/Plankton5544/BSUIT 
+for updated repo.
+
+
+
 # BSUIT - Bash Builtins-only TUI Library
 
 A lightweight, dependency-free Terminal User Interface (TUI) library for Bash that uses **only bash builtins** and ANSI escape sequences. No external dependencies like `tput`, `ncurses`, or other terminal manipulation tools required.
